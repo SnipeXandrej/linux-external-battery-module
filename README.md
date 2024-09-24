@@ -15,15 +15,14 @@ does not work!
 
 You can build the module with a simple `make`, and load it with `insmod`:
 
-    $ sudo insmod ./fake_battery.ko
+    $ sudo insmod ./external_battery.ko
 
-## Changing battery values via /dev/fake\_battery
+## Changing battery values via /dev/external\_battery
 
-You can write values to `/dev/fake_battery` to change the current charging/discharging
+You can write values to `/dev/external_battery` to change the current charging/discharging
 and charge levels of the battery:
 
-    $ echo 'charging = 0' | sudo tee /dev/fake_battery # set state to discharging
-    $ echo 'charging = 1' | sudo tee /dev/fake_battery # set state to charging
-    $ echo 'capacity0 = 77' | sudo tee /dev/fake_battery # set charge on BAT0 to 77%
-    $ echo 'capacity1 = 77' | sudo tee /dev/fake_battery # set charge on BAT1 to 77%
+    $ echo 'charging = 0' | sudo tee /dev/external_battery # set state to discharging
+    $ echo 'charging = 1' | sudo tee /dev/external_battery # set state to charging
+    $ echo 'capacity0 = 77' | sudo tee /dev/external_battery # set charge on BAT0 to 77%
 
