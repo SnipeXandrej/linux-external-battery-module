@@ -25,22 +25,22 @@
 #include <asm/uaccess.h>
 
 static int
-fake_battery_get_property1(struct power_supply *psy,
-        enum power_supply_property psp,
-        union power_supply_propval *val);
+external_battery_get_property1(struct power_supply *psy,
+                               enum power_supply_property psp,
+                               union power_supply_propval *val);
 
 
 static int
-fake_ac_get_property(struct power_supply *psy,
-        enum power_supply_property psp,
-        union power_supply_propval *val);
+external_ac_get_property(struct power_supply *psy,
+                         enum power_supply_property psp,
+                         union power_supply_propval *val);
 
 static struct battery_status {
     int status;
     int capacity_level;
     int capacity;
     int time_left;
-} fake_battery_statuses[1] = {
+} external_battery_statuses[1] = {
     {
         .status = POWER_SUPPLY_STATUS_FULL,
         .capacity_level = POWER_SUPPLY_CAPACITY_LEVEL_FULL,
@@ -51,11 +51,11 @@ static struct battery_status {
 
 static int ac_status = 1;
 
-static char *fake_ac_supplies[] = {
+static char *external_ac_supplies[] = {
     "extBAT0",
 };
 
-static enum power_supply_property fake_battery_properties[] = {
+static enum power_supply_property external_battery_properties[] = {
     POWER_SUPPLY_PROP_STATUS,
     POWER_SUPPLY_PROP_CHARGE_TYPE,
     POWER_SUPPLY_PROP_HEALTH,
@@ -75,7 +75,7 @@ static enum power_supply_property fake_battery_properties[] = {
     POWER_SUPPLY_PROP_VOLTAGE_NOW,
 };
 
-static enum power_supply_property fake_ac_properties[] = {
+static enum power_supply_property external_ac_properties[] = {
     POWER_SUPPLY_PROP_ONLINE,
 };
 
@@ -83,17 +83,17 @@ static struct power_supply_desc descriptions[] = {
     {
         .name = "extBAT0",
         .type = POWER_SUPPLY_TYPE_BATTERY,
-        .properties = fake_battery_properties,
-        .num_properties = ARRAY_SIZE(fake_battery_properties),
-        .get_property = fake_battery_get_property1,
+        .properties = external_battery_properties,
+        .num_properties = ARRAY_SIZE(external_battery_properties),
+        .get_property = external_battery_get_property1,
     },
 
     {
         .name = "extAC0",
         .type = POWER_SUPPLY_TYPE_MAINS,
-        .properties = fake_ac_properties,
-        .num_properties = ARRAY_SIZE(fake_ac_properties),
-        .get_property = fake_ac_get_property,
+        .properties = external_ac_properties,
+        .num_properties = ARRAY_SIZE(external_ac_properties),
+        .get_property = external_ac_get_property,
     },
 };
 
@@ -101,8 +101,8 @@ static struct power_supply_config configs[] = {
     { },
     { },
     {
-        .supplied_to = fake_ac_supplies,
-        .num_supplicants = ARRAY_SIZE(fake_ac_supplies),
+        .supplied_to = external_ac_supplies,
+        .num_supplicants = ARRAY_SIZE(external_ac_supplies),
     },
 };
 
@@ -111,7 +111,7 @@ static struct power_supply *supplies[sizeof(descriptions) / sizeof(descriptions[
 static ssize_t
 control_device_read(struct file *file, char *buffer, size_t count, loff_t *ppos)
 {
-    static char *message = "fake battery information!";
+    static char *message = "External battery information!";
     size_t message_len = strlen(message);
 
     if(count < message_len) {
@@ -209,12 +209,12 @@ control_device_write(struct file *file, const char *buffer, size_t count, loff_t
     int status;
 
     if(*ppos != 0) {
-        printk(KERN_ERR "writes to /dev/fake_battery must be completed in a single system call\n");
+        printk(KERN_ERR "writes to /dev/external_battery must be completed in a single system call\n");
         return -EINVAL;
     }
 
     if(count > 1024) {
-        printk(KERN_ERR "Too much data provided to /dev/fake_battery (limit 1024 bytes)\n");
+        printk(KERN_ERR "Too much data provided to /dev/external_battery (limit 1024 bytes)\n");
         return -EINVAL;
     }
 
@@ -230,7 +230,7 @@ control_device_write(struct file *file, const char *buffer, size_t count, loff_t
     while((newline = memchr(buffer_cursor, '\n', bytes_left))) {
         *newline = '\0';
         /* XXX this is non-atomic */
-        status = handle_control_line(buffer_cursor, &ac_status, fake_battery_statuses);
+        status = handle_control_line(buffer_cursor, &ac_status, external_battery_statuses);
 
         if(status) {
             return status;
@@ -240,8 +240,8 @@ control_device_write(struct file *file, const char *buffer, size_t count, loff_t
         buffer_cursor  = newline + 1;
     }
 
-    handle_charge_changes(ac_status, &fake_battery_statuses[0]);
-    // handle_charge_changes(ac_status, &fake_battery_statuses[1]);
+    handle_charge_changes(ac_status, &external_battery_statuses[0]);
+    // handle_charge_changes(ac_status, &external_battery_statuses[1]);
 
     power_supply_changed(supplies[0]);
     // power_supply_changed(supplies[1]);
@@ -258,15 +258,15 @@ static struct file_operations control_device_ops = {
 
 static struct miscdevice control_device = {
     MISC_DYNAMIC_MINOR,
-    "fake_battery",
+    "external_battery",
     &control_device_ops,
 };
 
 static int
-fake_battery_generic_get_property(struct power_supply *psy,
-        enum power_supply_property psp,
-        union power_supply_propval *val,
-        struct battery_status *status)
+external_battery_generic_get_property(struct power_supply *psy,
+                                      enum power_supply_property psp,
+                                      union power_supply_propval *val,
+                                      struct battery_status *status)
 {
     switch (psp) {
         case POWER_SUPPLY_PROP_MANUFACTURER:
@@ -317,41 +317,41 @@ fake_battery_generic_get_property(struct power_supply *psy,
 };
 
 static int
-fake_battery_get_property1(struct power_supply *psy,
-        enum power_supply_property psp,
-        union power_supply_propval *val)
+external_battery_get_property1(struct power_supply *psy,
+                               enum power_supply_property psp,
+                               union power_supply_propval *val)
 {
     switch (psp) {
         case POWER_SUPPLY_PROP_MODEL_NAME:
-            val->strval = "Fake battery 1";
+            val->strval = "External battery";
             break;
         case POWER_SUPPLY_PROP_SERIAL_NUMBER:
-            val->strval = "12345678";
+            val->strval = "OneOfAKind";
             break;
         default:
-            return fake_battery_generic_get_property(psy, psp, val, &fake_battery_statuses[0]);
+            return external_battery_generic_get_property(psy, psp, val, &external_battery_statuses[0]);
     }
     return 0;
 }
 
 
 static int
-fake_ac_get_property(struct power_supply *psy,
-        enum power_supply_property psp,
-        union power_supply_propval *val)
+external_ac_get_property(struct power_supply *psy,
+                         enum power_supply_property psp,
+                         union power_supply_propval *val)
 {
     switch (psp) {
-    case POWER_SUPPLY_PROP_ONLINE:
+        case POWER_SUPPLY_PROP_ONLINE:
             val->intval = ac_status;
             break;
-    default:
+        default:
             return -EINVAL;
     }
     return 0;
 }
 
 static int __init
-fake_battery_init(void)
+external_battery_init(void)
 {
     int result;
     int i;
@@ -365,15 +365,15 @@ fake_battery_init(void)
     for(i = 0; i < ARRAY_SIZE(descriptions); i++) {
         supplies[i] = power_supply_register(NULL, &descriptions[i], &configs[i]);
         if(IS_ERR(supplies[i])) {
-            printk(KERN_ERR "Unable to register power supply %d in fake_battery\n", i);
+            printk(KERN_ERR "Unable to register power supply %d in external_battery\n", i);
             goto error;
         }
     }
 
-    printk(KERN_INFO "loaded fake_battery module\n");
+    printk(KERN_INFO "loaded external_battery module\n");
     return 0;
 
-error:
+    error:
     while(--i >= 0) {
         power_supply_unregister(supplies[i]);
     }
@@ -382,7 +382,7 @@ error:
 }
 
 static void __exit
-fake_battery_exit(void)
+external_battery_exit(void)
 {
     int i;
 
@@ -392,10 +392,10 @@ fake_battery_exit(void)
         power_supply_unregister(supplies[i]);
     }
 
-    printk(KERN_INFO "unloaded fake_battery module\n");
+    printk(KERN_INFO "unloaded external_battery module\n");
 }
 
-module_init(fake_battery_init);
-module_exit(fake_battery_exit);
+module_init(external_battery_init);
+module_exit(external_battery_exit);
 
 MODULE_LICENSE("GPL");
