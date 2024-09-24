@@ -29,10 +29,6 @@ fake_battery_get_property1(struct power_supply *psy,
         enum power_supply_property psp,
         union power_supply_propval *val);
 
-static int
-fake_battery_get_property2(struct power_supply *psy,
-        enum power_supply_property psp,
-        union power_supply_propval *val);
 
 static int
 fake_ac_get_property(struct power_supply *psy,
@@ -44,13 +40,7 @@ static struct battery_status {
     int capacity_level;
     int capacity;
     int time_left;
-} fake_battery_statuses[2] = {
-    {
-        .status = POWER_SUPPLY_STATUS_FULL,
-        .capacity_level = POWER_SUPPLY_CAPACITY_LEVEL_FULL,
-        .capacity = 100,
-        .time_left = 3600,
-    },
+} fake_battery_statuses[1] = {
     {
         .status = POWER_SUPPLY_STATUS_FULL,
         .capacity_level = POWER_SUPPLY_CAPACITY_LEVEL_FULL,
@@ -62,8 +52,7 @@ static struct battery_status {
 static int ac_status = 1;
 
 static char *fake_ac_supplies[] = {
-    "BAT0",
-    "BAT1",
+    "extBAT0",
 };
 
 static enum power_supply_property fake_battery_properties[] = {
@@ -92,7 +81,7 @@ static enum power_supply_property fake_ac_properties[] = {
 
 static struct power_supply_desc descriptions[] = {
     {
-        .name = "BAT0",
+        .name = "extBAT0",
         .type = POWER_SUPPLY_TYPE_BATTERY,
         .properties = fake_battery_properties,
         .num_properties = ARRAY_SIZE(fake_battery_properties),
@@ -100,15 +89,7 @@ static struct power_supply_desc descriptions[] = {
     },
 
     {
-        .name = "BAT1",
-        .type = POWER_SUPPLY_TYPE_BATTERY,
-        .properties = fake_battery_properties,
-        .num_properties = ARRAY_SIZE(fake_battery_properties),
-        .get_property = fake_battery_get_property2,
-    },
-
-    {
-        .name = "AC0",
+        .name = "extAC0",
         .type = POWER_SUPPLY_TYPE_MAINS,
         .properties = fake_ac_properties,
         .num_properties = ARRAY_SIZE(fake_ac_properties),
@@ -260,11 +241,11 @@ control_device_write(struct file *file, const char *buffer, size_t count, loff_t
     }
 
     handle_charge_changes(ac_status, &fake_battery_statuses[0]);
-    handle_charge_changes(ac_status, &fake_battery_statuses[1]);
+    // handle_charge_changes(ac_status, &fake_battery_statuses[1]);
 
     power_supply_changed(supplies[0]);
-    power_supply_changed(supplies[1]);
-    power_supply_changed(supplies[2]);
+    // power_supply_changed(supplies[1]);
+    // power_supply_changed(supplies[2]);
 
     return count;
 }
@@ -353,23 +334,6 @@ fake_battery_get_property1(struct power_supply *psy,
     return 0;
 }
 
-static int
-fake_battery_get_property2(struct power_supply *psy,
-        enum power_supply_property psp,
-        union power_supply_propval *val)
-{
-    switch (psp) {
-        case POWER_SUPPLY_PROP_MODEL_NAME:
-            val->strval = "Fake battery 2";
-            break;
-        case POWER_SUPPLY_PROP_SERIAL_NUMBER:
-            val->strval = "12345678";
-            break;
-        default:
-            return fake_battery_generic_get_property(psy, psp, val, &fake_battery_statuses[1]);
-    }
-    return 0;
-}
 
 static int
 fake_ac_get_property(struct power_supply *psy,
