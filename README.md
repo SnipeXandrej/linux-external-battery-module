@@ -1,4 +1,4 @@
-# Fake Battery Module for the Linux kernel
+# External Battery Module for the Linux kernel
 
 This is a kernel module I wrote (based mainly on the `test_power` module
 included in the Linux kernel source) for simulating multiple batteries on
