@@ -53,7 +53,7 @@ static struct battery_status {
     },
 };
 
-static int ac_status = 1;
+static int ac_status = 0;
 
 static char *external_ac_supplies[] = {
     "BAT0",
