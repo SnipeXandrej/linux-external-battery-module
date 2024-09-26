@@ -21,8 +21,12 @@
 #include <linux/miscdevice.h>
 #include <linux/module.h>
 #include <linux/power_supply.h>
+#include <linux/device.h>
 
 #include <asm/uaccess.h>
+
+static struct power_supply *bat0;
+static struct power_supply *ac0;
 
 static int
 external_battery_get_property1(struct power_supply *psy,
@@ -52,7 +56,7 @@ static struct battery_status {
 static int ac_status = 1;
 
 static char *external_ac_supplies[] = {
-    "extBAT0",
+    "BAT0",
 };
 
 static enum power_supply_property external_battery_properties[] = {
@@ -81,7 +85,7 @@ static enum power_supply_property external_ac_properties[] = {
 
 static struct power_supply_desc descriptions[] = {
     {
-        .name = "extBAT0",
+        .name = "BAT0",
         .type = POWER_SUPPLY_TYPE_BATTERY,
         .properties = external_battery_properties,
         .num_properties = ARRAY_SIZE(external_battery_properties),
@@ -89,7 +93,7 @@ static struct power_supply_desc descriptions[] = {
     },
 
     {
-        .name = "extAC0",
+        .name = "AC0",
         .type = POWER_SUPPLY_TYPE_MAINS,
         .properties = external_ac_properties,
         .num_properties = ARRAY_SIZE(external_ac_properties),
@@ -303,7 +307,7 @@ external_battery_generic_get_property(struct power_supply *psy,
             val->intval = status->time_left;
             break;
         case POWER_SUPPLY_PROP_TEMP:
-            val->intval = 26;
+            val->intval = 252;
             break;
         case POWER_SUPPLY_PROP_VOLTAGE_NOW:
             val->intval = 3300;
@@ -350,9 +354,39 @@ external_ac_get_property(struct power_supply *psy,
     return 0;
 }
 
+static int unregister_old_devices(void) {
+    /* Find the power supply devices by name */
+    bat0 = power_supply_get_by_name("BAT0");
+    if (!bat0) {
+        pr_err("Failed to find BAT0, it was probably unregistered already\n");
+    } else {
+        pr_info("Found BAT0 power supply\n");
+
+        power_supply_unregister(bat0);
+        pr_info("BAT0 power supply unregistered\n");
+    }
+
+    ac0 = power_supply_get_by_name("AC0");
+    if (!ac0) {
+        pr_err("Failed to find AC0, it was probably unregistered already\n");
+    } else {
+        pr_info("Found AC0 power supply\n");
+
+        power_supply_unregister(ac0);
+        pr_info("AC0 power supply unregistered\n");
+    }
+
+    return 0;  // Initialization successful
+}
+
 static int __init
 external_battery_init(void)
 {
+    printk(KERN_INFO "loading external_battery module\n");
+
+    // unregister AC0 and BAT0
+    unregister_old_devices();
+
     int result;
     int i;
 
