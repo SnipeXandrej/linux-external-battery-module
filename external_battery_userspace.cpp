@@ -36,6 +36,11 @@ void batteryPercentage(int value, ofstream &battery) {
 }
 
 int main() {
+    if (getuid()) {
+        cout << "Please run this program as a root user!" << endl;
+        return 1;
+    }
+
     ifstream serialStream;
     serialStream.open("/dev/ttyUSB0");
     if ( !serialStream.is_open() ) {
