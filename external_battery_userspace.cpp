@@ -7,8 +7,12 @@ using namespace std;
 
 string line;
 int percentage = 0;
-int percentageSmooth = 0;
-int loop_count = 0;
+
+
+#define WINDOW_SIZE 90
+float   windowVoltage[WINDOW_SIZE] = {0};  // Initialize the window with zeros
+int     rolAvgCountVoltage = 0;  // To keep track of the number of elements added
+float   rolAvgVoltage = 0;
 
 string removeString(const string toRemove, string str)
 {
@@ -19,20 +23,28 @@ string removeString(const string toRemove, string str)
     return str;
 }
 
-void batteryPercentage(int value, ofstream &battery) {
-    percentageSmooth = percentageSmooth + value;
-    loop_count++;
-    // cout << "loop_count: " << loop_count << endl;
-    // cout << "percentage: " << percentageSmooth << endl;
-
-    if (loop_count >= 60) {
-        percentageSmooth = percentageSmooth / 60;
-
-        battery << "capacity0 = " << percentage << endl;
-
-        percentageSmooth = 0;
-        loop_count = 0;
+float calculate_moving_average(float window[], int size) {
+    float sum = 0.0;
+    for (int i = 0; i < size; i++) {
+        sum += window[i];
     }
+    return sum / size;
+}
+
+void batteryPercentage(int value, ofstream &battery) {
+    // cout << "value: " << percentageSmooth << endl;
+
+    windowVoltage[rolAvgCountVoltage % WINDOW_SIZE] = value;
+    rolAvgCountVoltage++;
+    if (rolAvgCountVoltage > (WINDOW_SIZE * 1000)) {
+        rolAvgCountVoltage = 1;
+    }
+
+    int sizeVoltage = rolAvgCountVoltage < WINDOW_SIZE ? rolAvgCountVoltage : WINDOW_SIZE;
+    rolAvgVoltage = calculate_moving_average(windowVoltage, sizeVoltage);
+
+    battery << "capacity0 = " << (int)rolAvgVoltage << endl;
+    // cout << "percentage: " <<         rolAvgVoltage << endl;
 }
 
 int main() {
@@ -65,15 +77,15 @@ int main() {
                     batteryPercentage(percentage, battery);
                 }
                 catch (std::invalid_argument const& ex) {
-                    std::cout << ex.what() << '\n';
+                    std::cout << "this did an oopsie: " << ex.what() << '\n';
                 }
             }
         }
 
         if (!serialStream.is_open() || serialStream.fail()) {
             cout << "serialStream is/was closed!" << endl;
-            cout << "retrying in 3 seconds..." << "\n" << endl;
-            sleep(3);
+            cout << "retrying in 5 seconds..." << "\n" << endl;
+            sleep(5);
             serialStream.close();
             serialStream.open("/dev/ttyUSB0");
         }
