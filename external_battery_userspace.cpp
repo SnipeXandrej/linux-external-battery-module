@@ -84,10 +84,13 @@ int main() {
 
         if (!serialStream.is_open() || serialStream.fail()) {
             cout << "serialStream is/was closed!" << endl;
-            cout << "retrying in 5 seconds..." << "\n" << endl;
-            sleep(5);
-            serialStream.close();
-            serialStream.open("/dev/ttyUSB0");
+            cout << "retrying every 5 seconds..." << "\n" << endl;
+
+            while(serialStream.fail()) {
+                serialStream.close();
+                serialStream.open("/dev/ttyUSB0");
+                sleep(5);
+            }
         }
     }
 }
