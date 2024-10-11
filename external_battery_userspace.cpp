@@ -2,11 +2,18 @@
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
+#include <thread>
+#include <termios.h>
 
 #include <stdint.h>
 #include <ryzenadj.h>
 
 using namespace std;
+
+ofstream battery;
+
+// initialize ryzenadj
+ryzen_access ry = init_ryzenadj();
 
 string line;
 int percentage = 0;
@@ -50,14 +57,58 @@ void batteryPercentage(int value, ofstream &battery) {
     // cout << "percentage: " <<         rolAvgVoltage << endl;
 }
 
+void set_battery_charging() {
+    battery << "charging = 0" << endl;
+    set_power_saving(ry);
+}
+
+void set_battery_discharging() {
+    battery << "charging = 1" << endl;
+    set_max_performance(ry);
+}
+
+void listenForInput() {
+    // Set terminal to non-blocking mode
+    termios settings;
+    tcgetattr(STDIN_FILENO, &settings);    // Get current terminal settings
+    settings.c_lflag &= ~ICANON;           // Disable canonical mode (buffered input)
+    settings.c_lflag &= ~ECHO;             // Disable echoing the input
+    tcsetattr(STDIN_FILENO, TCSANOW, &settings);  // Apply new settings
+
+    char input;
+    while (1) {
+        if (read(STDIN_FILENO, &input, 1) > 0) {  // Non-blocking read
+            if (input == '\x1b') {  // Escape sequence
+                char seq[2];
+                if (read(STDIN_FILENO, &seq[0], 1) > 0 && read(STDIN_FILENO, &seq[1], 1) > 0) {
+                    if (seq[0] == '[') {
+                        switch (seq[1]) {
+                            case 'A':
+                                set_battery_discharging();
+                                cout << "Set to charging/plugged in" << endl;
+                                break;
+                            case 'B':
+                                set_battery_charging();
+                                cout << "Set to discharging/unplugged" << endl;
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 int main() {
     if (getuid()) {
         cout << "Please run this program as a root user!" << endl;
         return 1;
     }
 
-    // initialize ryzenadj
-    ryzen_access ry = init_ryzenadj();
+    if(!ry){
+        printf("Unable to init ryzenadj\n");
+        return -1;
+    }
 
     ifstream serialStream;
     serialStream.open("/dev/ttyUSB0");
@@ -65,7 +116,6 @@ int main() {
       cout << "Failed to open serialStream" << endl;
     }
 
-    ofstream battery;
     battery.open("/dev/external_battery");
     if ( !battery.is_open() ) {
       cout << "Failed to open battery" << endl;
@@ -76,6 +126,8 @@ int main() {
     battery << "charging = 0" << endl;
     set_power_saving(ry);
 
+    thread inputThread(listenForInput);
+
     while (1) {
         if (serialStream.is_open() || !serialStream.fail()) {
             cout << "serialStream is open! reading..." << endl;
@@ -85,7 +137,7 @@ int main() {
                     batteryPercentage(percentage, battery);
                 }
                 catch (std::invalid_argument const& ex) {
-                    std::cout << "this did an oopsie: " << ex.what() << '\n';
+                    cout << "this did an oopsie: " << ex.what() << '\n';
                 }
             }
         }
