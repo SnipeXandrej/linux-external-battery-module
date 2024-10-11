@@ -3,6 +3,9 @@
 #include <iostream>
 #include <unistd.h>
 
+#include <stdint.h>
+#include <ryzenadj.h>
+
 using namespace std;
 
 string line;
@@ -53,6 +56,9 @@ int main() {
         return 1;
     }
 
+    // initialize ryzenadj
+    ryzen_access ry = init_ryzenadj();
+
     ifstream serialStream;
     serialStream.open("/dev/ttyUSB0");
     if ( !serialStream.is_open() ) {
@@ -66,7 +72,9 @@ int main() {
     }
 
     // Show as if the charger is disconnected
+    // also set the ryzen cpu to a power-saving mode via ryzenadj
     battery << "charging = 0" << endl;
+    set_power_saving(ry);
 
     while (1) {
         if (serialStream.is_open() || !serialStream.fail()) {
