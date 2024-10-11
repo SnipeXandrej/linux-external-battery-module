@@ -58,13 +58,13 @@ void batteryPercentage(int value, ofstream &battery) {
 }
 
 void set_battery_charging() {
-    battery << "charging = 0" << endl;
-    set_power_saving(ry);
+    battery << "charging = 1" << endl;
+    set_max_performance(ry);
 }
 
 void set_battery_discharging() {
-    battery << "charging = 1" << endl;
-    set_max_performance(ry);
+    battery << "charging = 0" << endl;
+    set_power_saving(ry);
 }
 
 void listenForInput() {
@@ -84,11 +84,11 @@ void listenForInput() {
                     if (seq[0] == '[') {
                         switch (seq[1]) {
                             case 'A':
-                                set_battery_discharging();
+                                set_battery_charging();
                                 cout << "Set to charging/plugged in" << endl;
                                 break;
                             case 'B':
-                                set_battery_charging();
+                                set_battery_discharging();
                                 cout << "Set to discharging/unplugged" << endl;
                                 break;
                         }
@@ -122,9 +122,8 @@ int main() {
     }
 
     // Show as if the charger is disconnected
-    // also set the ryzen cpu to a power-saving mode via ryzenadj
-    battery << "charging = 0" << endl;
-    set_power_saving(ry);
+    // also sets the ryzen cpu to a power-saving mode via ryzenadj
+    set_battery_discharging();
 
     thread inputThread(listenForInput);
 
