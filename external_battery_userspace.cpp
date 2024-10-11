@@ -9,7 +9,7 @@ string line;
 int percentage = 0;
 
 
-#define WINDOW_SIZE 90
+#define WINDOW_SIZE 180
 float   windowVoltage[WINDOW_SIZE] = {0};  // Initialize the window with zeros
 int     rolAvgCountVoltage = 0;  // To keep track of the number of elements added
 float   rolAvgVoltage = 0;
